@@ -1,6 +1,7 @@
 
 import { memo } from "react";
 import type { TaskCard } from "../../types/workspace";
+import ReactMarkdown from "react-markdown";
 
 interface TaskCardItemProps {
   card: TaskCard;
@@ -39,8 +40,23 @@ function TaskCardItemComponent({
       </div>
 
       {card.description && (
-        <p className="task-card__description">{card.description}</p>
-      )}
+  <div className="task-card__description">
+    <ReactMarkdown
+      skipHtml
+      components={{
+        a: ({ ...props }) => (
+          <a
+            {...props}
+            target="_blank"
+            rel="noopener noreferrer"
+          />
+        ),
+      }}
+    >
+      {card.description}
+    </ReactMarkdown>
+  </div>
+)}
 
       {card.tags.length > 0 && (
         <ul className="task-card__tags" aria-label="Task tags">

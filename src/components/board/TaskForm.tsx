@@ -1,5 +1,5 @@
-
-import { useEffect, useState, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
+import { useModalAccessibility } from "../../hooks/useModalAccessibility";
 import type { TaskCard } from "../../types/workspace";
 
 interface TaskFormProps {
@@ -13,11 +13,21 @@ interface TaskFormProps {
   onCancel: () => void;
 }
 
+function getLocalDateString() {
+  const date = new Date();
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+}
+
 export function TaskForm({
   initialCard,
   onSave,
   onCancel,
 }: TaskFormProps) {
+  const modalRef = useModalAccessibility(true, onCancel);
   const [title, setTitle] = useState(initialCard?.title ?? "");
   const [description, setDescription] = useState(
     initialCard?.description ?? ""
@@ -28,20 +38,6 @@ export function TaskForm({
   const [dueDate, setDueDate] = useState(
     initialCard?.dueDate ?? ""
   );
-
-  useEffect(() => {
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") {
-        onCancel();
-      }
-    }
-
-    window.addEventListener("keydown", handleKeyDown);
-
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [onCancel]);
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -67,6 +63,12 @@ export function TaskForm({
     });
   }
 
+  const today = getLocalDateString();
+
+const minimumDueDate =
+  initialCard?.dueDate && initialCard.dueDate < today
+    ? initialCard.dueDate
+    : today;
   return (
     <div
       className="task-modal__backdrop"
@@ -75,11 +77,13 @@ export function TaskForm({
       }}
     >
       <section
-        className="task-modal"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="task-form-title"
-      >
+  ref={modalRef}
+  className="task-modal"
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="task-form-title"
+  tabIndex={-1}
+>
         <h2 id="task-form-title">
           {initialCard ? "Edit task" : "Create task"}
         </h2>
@@ -126,11 +130,12 @@ export function TaskForm({
           <div className="form-field">
             <label htmlFor="task-due-date">Due date</label>
             <input
-              id="task-due-date"
-              type="date"
-              value={dueDate}
-              onChange={(event) => setDueDate(event.target.value)}
-            />
+  id="task-due-date"
+  type="date"
+  value={dueDate}
+  min={minimumDueDate}
+  onChange={(event) => setDueDate(event.target.value)}
+/>
           </div>
 
           <div className="task-modal__actions">

@@ -10,6 +10,8 @@ export function Dashboard() {
   const [description, setDescription] = useState("");
   const [error, setError] = useState("");
 
+  const [searchQuery, setSearchQuery] = useState("");
+
   function handleCreateBoard(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
@@ -40,6 +42,15 @@ export function Dashboard() {
   }
 
   const boards = Object.values(state.boards);
+
+  const filteredBoards = boards.filter((board) => {
+  const query = searchQuery.trim().toLowerCase();
+
+  return (
+    board.title.toLowerCase().includes(query) ||
+    board.description.toLowerCase().includes(query)
+  );
+});
 
   return (
     <main className="dashboard">
@@ -115,6 +126,17 @@ export function Dashboard() {
           </div>
         </div>
 
+        <div className="form-field">
+  <label htmlFor="board-search">Search boards</label>
+  <input
+    id="board-search"
+    type="search"
+    value={searchQuery}
+    onChange={(event) => setSearchQuery(event.target.value)}
+    placeholder="Search by board title or description..."
+  />
+</div>
+
         {boards.length === 0 ? (
           <div className="empty-state">
             <span className="empty-state__icon" aria-hidden="true">
@@ -125,7 +147,7 @@ export function Dashboard() {
           </div>
         ) : (
           <div className="boards-grid">
-            {boards.map((board) => (
+            {filteredBoards.map((board) => (
               <BoardCard key={board.id} board={board} />
             ))}
           </div>

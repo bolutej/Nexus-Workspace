@@ -480,13 +480,6 @@ textarea:focus-visible {
   font-size: 0.8rem;
 }
 
-.task-card__description {
-  color: var(--muted);
-  font-size: 0.875rem;
-  line-height: 1.6;
-  overflow-wrap: anywhere;
-}
-
 .task-card__tags {
   display: flex;
   flex-wrap: wrap;
@@ -576,4 +569,60 @@ textarea:focus-visible {
   clip: rect(0, 0, 0, 0);
   white-space: nowrap;
   clip-path: inset(50%);
+}
+
+.task-card__description {
+  color: var(--muted);
+  font-size: 0.9rem;
+  line-height: 1.65;
+  overflow-wrap: anywhere;
+}
+
+.task-card__description > :first-child {
+  margin-top: 0;
+}
+
+.task-card__description > :last-child {
+  margin-bottom: 0;
+}
+
+.task-card__description h1,
+.task-card__description h2,
+.task-card__description h3 {
+  color: var(--text);
+  line-height: 1.4;
+  margin: 16px 0 8px;
+}
+
+.task-card__description ul,
+.task-card__description ol {
+  padding-left: 22px;
+}
+
+.task-card__description li + li {
+  margin-top: 4px;
+}
+
+.task-card__description a {
+  color: #c4b5fd;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.task-card__description blockquote {
+  margin-left: 0;
+  padding-left: 12px;
+  border-left: 3px solid #8b5cf6;
+}
+
+.task-card__description pre {
+  max-width: 100%;
+  overflow-x: auto;
+  padding: 12px;
+  border-radius: 8px;
+  background: #101116;
+}
+
+.task-card__description code {
+  overflow-wrap: anywhere;
 }

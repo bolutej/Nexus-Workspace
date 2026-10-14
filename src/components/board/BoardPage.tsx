@@ -23,7 +23,6 @@ export default function BoardPage() {
   const [editingCard, setEditingCard] = useState<TaskCard | undefined>();
   const [activeColumnId, setActiveColumnId] = useState<string | null>(null);
 
-//   const createTaskButtonRef = useRef<HTMLButtonElement | null>(null);
 
   const board = boardId ? state.boards[boardId] : undefined;
 
@@ -41,6 +40,7 @@ export default function BoardPage() {
     .map((id) => state.columns[id])
     .filter((column) => column !== undefined);
 
+   
   function handleCreateColumn(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
@@ -187,7 +187,8 @@ function handleCloseTaskForm() {
           </p>
         </div>
       </header>
-
+      
+      
       <section aria-labelledby="columns-heading">
         <h2 id="columns-heading">Columns</h2>
 
@@ -222,6 +223,7 @@ function handleCloseTaskForm() {
           </div>
         ) : (
           <div className="columns-grid">
+
             {columns.map((column) => (
               <article className="column-card" key={column.id}>
                 <div className="column-card__heading">
