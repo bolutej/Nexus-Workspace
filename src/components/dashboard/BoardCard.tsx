@@ -1,4 +1,4 @@
-
+import { Link } from "react-router-dom";
 import { memo } from "react";
 import type { Board } from "../../types/workspace";
 import { useWorkspace } from "../../hooks/useWorkspace";
@@ -30,8 +30,11 @@ function BoardCardComponent({ board }: BoardCardProps) {
   return (
     <article className="board-card">
       <div className="board-card__content">
-        <h2 className="board-card__title">{board.title}</h2>
-
+        <h2 className="board-card__title">
+  <Link className="board-card__link" to={`/boards/${board.id}`}>
+    {board.title}
+  </Link>
+</h2>
         <p className="board-card__description">
           {board.description || "No description provided."}
         </p>
