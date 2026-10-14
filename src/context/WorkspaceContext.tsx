@@ -1,6 +1,7 @@
 
 import {
   createContext,
+  useEffect,
   useReducer,
   type Dispatch,
   type ReactNode,
@@ -14,6 +15,11 @@ import {
 import type { WorkspaceState } from "../types/workspace";
 import type { WorkspaceAction } from "../state/workspaceActions";
 
+import {
+  loadWorkspace,
+  saveWorkspace,
+} from "../utils/workspaceStorage";
+
 interface WorkspaceContextValue {
   state: WorkspaceState;
   dispatch: Dispatch<WorkspaceAction>;
@@ -26,13 +32,22 @@ interface WorkspaceProviderProps {
   children: ReactNode;
 }
 
+function getInitialWorkspaceState(): WorkspaceState {
+  return loadWorkspace() ?? initialWorkspaceState;
+}
+
 export function WorkspaceProvider({
   children,
 }: WorkspaceProviderProps) {
   const [state, dispatch] = useReducer(
     workspaceReducer,
-    initialWorkspaceState
+    undefined,
+    getInitialWorkspaceState
   );
+
+  useEffect(() => {
+    saveWorkspace(state);
+  }, [state]);
 
   return (
     <WorkspaceContext.Provider value={{ state, dispatch }}>
