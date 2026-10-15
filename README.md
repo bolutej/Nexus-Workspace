@@ -1,75 +1,94 @@
-# React + TypeScript + Vite
+# Nexus Workspace
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Nexus Workspace is a task management application built with React, TypeScript, and Vite. It helps users organize projects using boards, columns, and task cards.
 
-Currently, two official plugins are available:
+## Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- Create, search, and delete boards.
+- Create, rename, and delete columns.
+- Create, edit, delete, and move tasks.
+- Add tags, due dates, and Markdown descriptions.
+- Save workspace data in localStorage.
+- Responsive design and an accessible task modal.
 
-## React Compiler
+## Tech Stack
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- React + TypeScript
+- Vite
+- React Router
+- React Context and `useReducer`
+- React Markdown
+- CSS and localStorage
 
-## Expanding the ESLint configuration
+## Getting Started
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-
+```bash
+npm install
+npm run dev
 ```
 
-You can also install [eslint-plugin-react-x](https://npmx.dev/package/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://npmx.dev/package/eslint-plugin-react-dom) for React-specific lint rules:
+Build for production:
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-
+```bash
+npm run build
 ```
+
+## Folder Structure
+
+```text
+src/
+├── app/           # Routing
+├── components/
+│   ├── dashboard/ # Board listing and cards
+│   └── board/     # Columns, tasks, and task form
+├── context/       # Shared workspace state
+├── hooks/         # Reusable React hooks
+├── state/         # Actions and reducer
+├── types/         # TypeScript interfaces
+├── utils/         # Storage utilities
+├── styles/        # Global CSS
+└── main.tsx       # Application entry point
+```
+
+## State Architecture
+
+Workspace data is normalized into separate records for boards, columns, and tasks. IDs connect related records.
+
+```mermaid
+flowchart TD
+    UI[React Components] --> C[Workspace Context]
+    C --> R[Workspace Reducer]
+    R --> S[Normalized State]
+    S --> P[localStorage]
+    P --> S
+```
+
+The reducer handles state changes in one place, while Context makes shared state available throughout the application. localStorage saves changes so data survives browser refreshes.
+
+Normalization makes entities easier to update and helps maintain consistent relationships when tasks move or columns are deleted.
+
+## Performance Strategy
+
+- **Lazy loading:** The board page loads separately from the dashboard.
+- **Memoization:** `BoardCard` and `TaskCardItem` use `React.memo` to avoid some unnecessary renders.
+- **Immutable updates:** The reducer returns updated state instead of mutating existing data.
+- **Direct lookup:** Normalized records allow entities to be accessed by ID.
+
+## Key Engineering Decisions
+
+- **React + TypeScript:** Reusable components and clearer data types.
+- **Context + reducer:** Centralized state management without an additional state library.
+- **Normalized state:** Easier updates and relationship management.
+- **localStorage:** Simple persistence without requiring a backend.
+- **Custom CSS:** Control over the interface and responsive layout.
+- **Accessibility:** Keyboard navigation and focus management in the task modal.
+
+## Limitations
+
+Data is stored locally in the browser. The application does not currently support accounts, cloud synchronization, or real-time collaboration.
+
+## Future Improvements
+
+- Add automated tests.
+- Improve validation and recovery for stored data.
+- Add a backend if multi-user collaboration is required.
