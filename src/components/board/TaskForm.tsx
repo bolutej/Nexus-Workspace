@@ -1,6 +1,9 @@
 import { useState, type FormEvent } from "react";
 import { useModalAccessibility } from "../../hooks/useModalAccessibility";
 import type { TaskCard } from "../../types/workspace";
+import { useWorkspace } from "../../context/WorkspaceContext";
+import { CommentThread } from "./CommentThread";
+import type { CommentId, TaskComment } from "../../types/comments";
 
 interface TaskFormProps {
   initialCard?: TaskCard;
@@ -27,6 +30,8 @@ export function TaskForm({
   onSave,
   onCancel,
 }: TaskFormProps) {
+  const { state, dispatch } = useWorkspace();
+
   const modalRef = useModalAccessibility(true, onCancel);
   const [title, setTitle] = useState(initialCard?.title ?? "");
   const [description, setDescription] = useState(
@@ -38,6 +43,45 @@ export function TaskForm({
   const [dueDate, setDueDate] = useState(
     initialCard?.dueDate ?? ""
   );
+
+  function handleCreateComment(
+  content: string,
+  parentId: CommentId | null
+) {
+  if (!initialCard) return;
+
+  const comment: TaskComment = {
+    id: crypto.randomUUID(),
+    cardId: initialCard.id,
+    parentId,
+    content,
+    author: "You",
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  };
+
+  dispatch({
+    type: "COMMENT_CREATED",
+    payload: { comment },
+  });
+}
+
+function handleUpdateComment(
+  commentId: CommentId,
+  content: string
+) {
+  dispatch({
+    type: "COMMENT_UPDATED",
+    payload: { commentId, content },
+  });
+}
+
+function handleDeleteComment(commentId: CommentId) {
+  dispatch({
+    type: "COMMENT_DELETED",
+    payload: { commentId },
+  });
+}
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -152,6 +196,17 @@ const minimumDueDate =
             </button>
           </div>
         </form>
+        {initialCard && (
+  <CommentThread
+    comments={state.comments ?? {}}
+    commentIds={
+      state.commentIdsByCard?.[initialCard.id] ?? []
+    }
+    onCreate={handleCreateComment}
+    onUpdate={handleUpdateComment}
+    onDelete={handleDeleteComment}
+  />
+)}
       </section>
     </div>
   );

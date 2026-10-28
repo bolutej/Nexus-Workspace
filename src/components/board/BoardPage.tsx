@@ -223,23 +223,37 @@ function handleDragEnd(event: DragEndEvent) {
     return;
   }
 
-  dispatch({
-    type: "CARD_MOVED",
-    payload: {
-      cardId,
-      destinationColumnId,
-      destinationIndex,
-    },
-  });
+ const nextVersion = ++syncVersion;
+const timestamp = Date.now();
 
-  workspaceSync.publish({
+dispatch({
+  type: "CARD_MOVED",
+  payload: {
+    cardId,
+    destinationColumnId,
+    destinationIndex,
+  },
+});
+
+dispatch({
+  type: "LOCAL_CARD_MOVE_VERSION_RECORDED",
+  payload: {
+    cardId,
+    timestamp,
+    sequence: nextVersion,
+    clientId: workspaceSyncClientId,
+  },
+});
+
+workspaceSync.publish({
   type: "CARD_MOVED",
   cardId,
   destinationColumnId,
   destinationIndex,
-  version: ++syncVersion,
+  version: nextVersion,
+  sequence: nextVersion,
   clientId: workspaceSyncClientId,
-  timestamp: Date.now(),
+  timestamp,
 });
 }
 
@@ -269,13 +283,16 @@ function handleSaveTask(values: {
     payload: newCard,
   });
 
-  workspaceSync.publish({
-    type: "CARD_CREATED",
-    card: newCard,
-    version: ++syncVersion,
-    clientId: workspaceSyncClientId,
-    timestamp: Date.now(),
-  });
+     const nextVersion = ++syncVersion;
+
+    workspaceSync.publish({
+      type: "CARD_CREATED",
+      card: newCard,
+      version: nextVersion,
+      sequence: nextVersion,
+      clientId: workspaceSyncClientId,
+      timestamp: Date.now(),
+    });
   } else {
     return;
   }
@@ -451,13 +468,20 @@ function SortableTask({ id, children }: SortableTaskProps) {
 
   return (
     <div
-      ref={setNodeRef}
-      style={style}
-      {...attributes}
-      {...listeners}
-    >
-      {children}
-    </div>
+  ref={setNodeRef}
+  style={style}
+>
+  <div
+    className="task-card__drag-handle"
+    {...attributes}
+    {...listeners}
+    aria-label="Drag task to reorder"
+  >
+    ⠿ Drag task
+  </div>
+
+  {children}
+</div>
   );
 }
 

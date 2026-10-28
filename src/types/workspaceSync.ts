@@ -6,6 +6,7 @@ export type WorkspaceSyncEvent =
       type: "CARD_CREATED";
       card: TaskCard;
       version: number;
+      sequence: number;
       clientId: string;
       timestamp: number;
     }
@@ -15,6 +16,7 @@ export type WorkspaceSyncEvent =
       destinationColumnId: string;
       destinationIndex: number;
       version: number;
+      sequence: number;
       clientId: string;
       timestamp: number;
     };

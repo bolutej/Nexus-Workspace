@@ -49,10 +49,12 @@ function readStoredEvents(): StoredSyncEvent[] {
   }
 
   return events.sort(
-    (first, second) =>
-      first.event.timestamp - second.event.timestamp ||
-      first.id.localeCompare(second.id)
-  );
+  (first, second) =>
+    first.event.timestamp - second.event.timestamp ||
+    first.event.sequence - second.event.sequence ||
+    first.event.clientId.localeCompare(second.event.clientId) ||
+    first.id.localeCompare(second.id)
+);
 }
 
 function pollForEvents(): void {

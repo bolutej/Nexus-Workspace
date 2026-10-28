@@ -1,6 +1,7 @@
 
 import {
   createContext,
+  useContext,
   useEffect,
   useReducer,
   type Dispatch,
@@ -30,6 +31,18 @@ interface WorkspaceContextValue {
 export const WorkspaceContext =
   createContext<WorkspaceContextValue | null>(null);
 
+export function useWorkspace() {
+  const context = useContext(WorkspaceContext);
+
+  if (!context) {
+    throw new Error(
+      "useWorkspace must be used within a WorkspaceProvider"
+    );
+  }
+
+  return context;
+}
+
 interface WorkspaceProviderProps {
   children: ReactNode;
 }
@@ -42,10 +55,20 @@ export function WorkspaceProvider({
   children,
 }: WorkspaceProviderProps) {
   const [state, dispatch] = useReducer(
-    workspaceReducer,
-    undefined,
-    getInitialWorkspaceState
-  );
+  workspaceReducer,
+  undefined,
+  () => {
+    const savedState = getInitialWorkspaceState();
+
+    return {
+      ...savedState,
+      comments: savedState.comments ?? {},
+      commentIdsByCard: savedState.commentIdsByCard ?? {},
+      cardMoveVersions: savedState.cardMoveVersions ?? {},
+      processedEventIds: savedState.processedEventIds ?? [],
+    };
+  }
+);
 
   useEffect(() => {
     void workspaceApi.saveWorkspace(state);
@@ -61,12 +84,15 @@ export function WorkspaceProvider({
         dispatch({
           type: "REMOTE_EVENT_APPLIED",
           payload: {
-            eventId: `${event.clientId}-${event.version}`,
-            event: {
-              type: "CARD_CREATED",
-              payload: event.card,
-            },
-          },
+  eventId: `${event.clientId}-${event.version}`,
+  timestamp: event.timestamp,
+  sequence: event.sequence,
+  clientId: event.clientId,
+  event: {
+    type: "CARD_CREATED",
+    payload: event.card,
+  },
+},
         });
 
         return;
@@ -75,16 +101,19 @@ export function WorkspaceProvider({
       if (event.type === "CARD_MOVED") {
         dispatch({
           type: "REMOTE_EVENT_APPLIED",
-          payload: {
-            eventId: `${event.clientId}-${event.version}`,
-            event: {
-              type: "CARD_MOVED",
-              payload: {
-                cardId: event.cardId,
-                destinationColumnId: event.destinationColumnId,
-                destinationIndex: event.destinationIndex,
-              },
-            },
+         payload: {
+  eventId: `${event.clientId}-${event.version}`,
+  timestamp: event.timestamp,
+  sequence: event.sequence,
+  clientId: event.clientId,
+  event: {
+    type: "CARD_MOVED",
+    payload: {
+      cardId: event.cardId,
+      destinationColumnId: event.destinationColumnId,
+      destinationIndex: event.destinationIndex,
+    },
+  },
           },
         });
       }

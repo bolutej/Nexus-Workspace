@@ -1,4 +1,5 @@
-export type BoardId = string;
+import type { CommentId, TaskComment } from "./comments";export type BoardId = string;
+
 export type ColumnId = string;
 export type CardId = string;
 
@@ -26,8 +27,20 @@ export interface TaskCard {
     dueDate: string | null;
 }
 
-export interface WorkspaceState { 
-    boards: Record<BoardId, Board>;
-    columns: Record<ColumnId, BoardColumn>;
-    cards: Record<CardId, TaskCard>;
+export interface WorkspaceState {
+  boards: Record<BoardId, Board>;
+  columns: Record<ColumnId, BoardColumn>;
+  cards: Record<CardId, TaskCard>;
+  processedEventIds?: string[];
+
+  cardMoveVersions?: Record<
+    CardId,
+    {
+      timestamp: number;
+      sequence: number;
+      clientId: string;
+    }
+  >;
+  comments: Record<CommentId, TaskComment>;
+commentIdsByCard: Record<string, CommentId[]>;
 }

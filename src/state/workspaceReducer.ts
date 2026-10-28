@@ -2,10 +2,15 @@
 import type { WorkspaceState } from "../types/workspace";
 import type { WorkspaceAction } from "./workspaceActions";
 
+import type { CommentId} from "../types/comments";
+
 export const initialWorkspaceState: WorkspaceState = {
   boards: {},
   columns: {},
   cards: {},
+  processedEventIds: [],
+  comments: {},
+commentIdsByCard: {},
 };
 
 export function workspaceReducer(
@@ -72,6 +77,8 @@ export function workspaceReducer(
         boards: nextBoards,
         columns: nextColumns,
         cards: nextCards,
+        comments: state.comments,
+commentIdsByCard: state.commentIdsByCard,
       };
     }
 
@@ -334,62 +341,198 @@ case "CARD_MOVED": {
       };
     }
 
-       case "REMOTE_EVENT_APPLIED": {
-      const { event } = action.payload;
+       
+    case "REMOTE_EVENT_APPLIED": {
+  const { eventId, event, timestamp, sequence, clientId } =
+  action.payload;
+  const processedEventIds = state.processedEventIds ?? [];
 
-      if (event.type === "CARD_CREATED") {
-        const card = event.payload;
+  if (processedEventIds.includes(eventId)) {
+    return state;
+  }
 
-        // Ignore duplicate events.
-        if (state.cards[card.id]) {
-          return state;
-        }
+  let nextState: WorkspaceState = state;
+  let cardMoveVersions = state.cardMoveVersions ?? {};
 
-        const column = state.columns[card.columnId];
+  if (event.type === "CARD_CREATED") {
+    const card = event.payload;
+    const column = state.columns[card.columnId];
 
-        if (!column) {
-          return state;
-        }
-
-        return {
-          ...state,
-          columns: {
-            ...state.columns,
-            [column.id]: {
-              ...column,
-              cardIds: [...column.cardIds, card.id],
-            },
+    if (column && !state.cards[card.id]) {
+      nextState = {
+        ...state,
+        columns: {
+          ...state.columns,
+          [column.id]: {
+            ...column,
+            cardIds: [...column.cardIds, card.id],
           },
-          cards: {
-            ...state.cards,
-            [card.id]: card,
-          },
-        };
-      }
+        },
+        cards: {
+          ...state.cards,
+          [card.id]: card,
+        },
+      };
+    }
+  } else if (event.type === "CARD_MOVED") {
+    const {
+      cardId,
+      destinationColumnId,
+      destinationIndex,
+    } = event.payload;
 
-      if (event.type === "CARD_MOVED") {
-        const {
+   const incomingVersion = {
+  timestamp,
+  sequence,
+  clientId,
+};
+
+    const previousVersion = cardMoveVersions[cardId];
+
+    const isNewer =
+      !previousVersion ||
+      incomingVersion.timestamp > previousVersion.timestamp ||
+      (incomingVersion.timestamp === previousVersion.timestamp &&
+        incomingVersion.sequence > previousVersion.sequence) ||
+      (incomingVersion.timestamp === previousVersion.timestamp &&
+        incomingVersion.sequence === previousVersion.sequence &&
+        incomingVersion.clientId.localeCompare(
+          previousVersion.clientId
+        ) > 0);
+
+    if (isNewer) {
+      const movedState = workspaceReducer(state, {
+        type: "CARD_MOVED",
+        payload: {
           cardId,
           destinationColumnId,
           destinationIndex,
-        } = event.payload;
+        },
+      });
 
-        // Reuse the existing move logic.
-        return workspaceReducer(state, {
-          type: "CARD_MOVED",
-          payload: {
-            cardId,
-            destinationColumnId,
-            destinationIndex,
-          },
-        });
+      // Only record the version if the move was valid.
+      if (movedState !== state) {
+        nextState = movedState;
+        cardMoveVersions = {
+          ...cardMoveVersions,
+          [cardId]: incomingVersion,
+        };
       }
-
-      return state;
-    }
-
-    default: {
-      return state;
     }
   }
+
+  return {
+    ...nextState,
+    cardMoveVersions,
+    processedEventIds: [...processedEventIds, eventId],
+  };
 }
+case "LOCAL_CARD_MOVE_VERSION_RECORDED": {
+  const { cardId, timestamp, sequence, clientId } = action.payload;
+
+  return {
+    ...state,
+    cardMoveVersions: {
+      ...state.cardMoveVersions,
+      [cardId]: {
+        timestamp,
+        sequence,
+        clientId,
+      },
+    },
+  };
+}
+case "COMMENT_CREATED": {
+  const { comment } = action.payload;
+
+  if (
+    !state.cards[comment.cardId] ||
+    state.comments[comment.id] ||
+    (comment.parentId !== null &&
+      !state.comments[comment.parentId])
+  ) {
+    return state;
+  }
+
+  return {
+    ...state,
+    comments: {
+      ...state.comments,
+      [comment.id]: comment,
+    },
+    commentIdsByCard: {
+      ...state.commentIdsByCard,
+      [comment.cardId]: [
+        ...(state.commentIdsByCard[comment.cardId] ?? []),
+        comment.id,
+      ],
+    },
+  };
+}
+
+case "COMMENT_UPDATED": {
+  const { commentId, content } = action.payload;
+  const comment = state.comments[commentId];
+
+  if (!comment || !content.trim()) {
+    return state;
+  }
+
+  return {
+    ...state,
+    comments: {
+      ...state.comments,
+      [commentId]: {
+        ...comment,
+        content: content.trim(),
+        updatedAt: new Date().toISOString(),
+      },
+    },
+  };
+}
+
+case "COMMENT_DELETED": {
+  const { commentId } = action.payload;
+  const comment = state.comments[commentId];
+
+  if (!comment) {
+    return state;
+  }
+
+  // Delete the comment and all of its nested replies.
+  const idsToDelete = new Set<CommentId>([commentId]);
+  let foundNewChild = true;
+
+  while (foundNewChild) {
+    foundNewChild = false;
+
+    for (const existingComment of Object.values(state.comments)) {
+      if (
+        existingComment.parentId !== null &&
+        idsToDelete.has(existingComment.parentId) &&
+        !idsToDelete.has(existingComment.id)
+      ) {
+        idsToDelete.add(existingComment.id);
+        foundNewChild = true;
+      }
+    }
+  }
+
+  const nextComments = { ...state.comments };
+
+  for (const id of idsToDelete) {
+    delete nextComments[id];
+  }
+
+  return {
+    ...state,
+    comments: nextComments,
+    commentIdsByCard: {
+      ...state.commentIdsByCard,
+      [comment.cardId]: (
+        state.commentIdsByCard[comment.cardId] ?? []
+      ).filter((id) => !idsToDelete.has(id)),
+    },
+  };
+}
+  }}

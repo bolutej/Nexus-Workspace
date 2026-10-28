@@ -626,3 +626,214 @@ textarea:focus-visible {
 .task-card__description code {
   overflow-wrap: anywhere;
 }
+.task-card__drag-handle {
+  cursor: grab;
+  padding: 4px 0;
+  color: var(--muted, #777);
+  touch-action: none;
+  user-select: none;
+}
+
+.task-card__drag-handle:active {
+  cursor: grabbing;
+}
+
+/* Comment thread */
+.comment-thread {
+  margin-top: 1.5rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid #292929;
+  color: #f5f5f5;
+}
+
+.comment-thread h3 {
+  margin: 0 0 1rem;
+  color: #ffffff;
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.comment-thread__empty {
+  padding: 1.25rem;
+  text-align: center;
+  color: #999999;
+  background: #111111;
+  border: 1px dashed #333333;
+  border-radius: 10px;
+}
+
+/* Comment list */
+.comment-thread__list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+/* Individual comment */
+.comment-item {
+  min-width: 0;
+  padding: 1rem;
+  background: #111111;
+  border: 1px solid #292929;
+  border-radius: 10px;
+}
+
+.comment-item__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.65rem;
+}
+
+.comment-item__author {
+  color: #ffffff;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.comment-item__date {
+  color: #858585;
+  font-size: 0.75rem;
+}
+
+.comment-item__content {
+  margin: 0;
+  color: #d4d4d4;
+  font-size: 0.9rem;
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+/* Action buttons */
+.comment-item__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.85rem;
+}
+
+.comment-item__actions button,
+.comment-thread__form button,
+.comment-item__form button {
+  min-height: 36px;
+  padding: 0.45rem 0.8rem;
+  color: #e5e5e5;
+  background: #1b1b1b;
+  border: 1px solid #363636;
+  border-radius: 6px;
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 160ms ease, border-color 160ms ease;
+}
+
+.comment-item__actions button:hover,
+.comment-thread__form button:hover,
+.comment-item__form button:hover {
+  background: #282828;
+  border-color: #555555;
+}
+
+.comment-item__actions button:focus-visible,
+.comment-thread__form button:focus-visible,
+.comment-item__form button:focus-visible,
+.comment-thread textarea:focus-visible {
+  outline: 2px solid #a3a3a3;
+  outline-offset: 2px;
+}
+
+/* Nested replies */
+.comment-item__replies {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-top: 1rem;
+  margin-left: 0.75rem;
+  padding-left: 0.85rem;
+  border-left: 2px solid #333333;
+}
+
+/* New comment, reply and edit forms */
+.comment-thread__form,
+.comment-item__form {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.65rem;
+}
+
+.comment-thread__form {
+  margin-bottom: 1.25rem;
+}
+
+.comment-item__form {
+  margin-top: 0.85rem;
+}
+
+.comment-thread textarea {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 90px;
+  padding: 0.8rem;
+  resize: vertical;
+  color: #f5f5f5;
+  background: #0d0d0d;
+  border: 1px solid #363636;
+  border-radius: 8px;
+  font: inherit;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.comment-thread textarea::placeholder {
+  color: #777777;
+}
+
+.comment-thread textarea:focus {
+  border-color: #777777;
+  outline: none;
+}
+
+/* Primary submit buttons */
+.comment-thread__form button[type="submit"],
+.comment-item__form button[type="submit"] {
+  align-self: flex-start;
+  color: #ffffff;
+  background: #f0f0f0;
+  border-color: #f0f0f0;
+  font-weight: 600;
+}
+
+.comment-thread__form button[type="submit"]:hover,
+.comment-item__form button[type="submit"]:hover {
+  color: #ffffff;
+  background: #444444;
+  border-color: #444444;
+}
+
+/* Mobile */
+@media (max-width: 600px) {
+  .comment-thread {
+    margin-top: 1rem;
+    padding-top: 1rem;
+  }
+
+  .comment-item {
+    padding: 0.8rem;
+  }
+
+  .comment-item__replies {
+    margin-left: 0.2rem;
+    padding-left: 0.6rem;
+  }
+
+  .comment-item__header {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+}
