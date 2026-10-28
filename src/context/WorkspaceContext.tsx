@@ -15,10 +15,8 @@ import {
 import type { WorkspaceState } from "../types/workspace";
 import type { WorkspaceAction } from "../state/workspaceActions";
 
-import {
-  loadWorkspace,
-  saveWorkspace,
-} from "../utils/workspaceStorage";
+import { loadWorkspace } from "../utils/workspaceStorage";
+import { workspaceApi } from "../api/workspaceApi";
 
 interface WorkspaceContextValue {
   state: WorkspaceState;
@@ -46,8 +44,8 @@ export function WorkspaceProvider({
   );
 
   useEffect(() => {
-    saveWorkspace(state);
-  }, [state]);
+  void workspaceApi.saveWorkspace(state);
+}, [state]);
 
   return (
     <WorkspaceContext.Provider value={{ state, dispatch }}>

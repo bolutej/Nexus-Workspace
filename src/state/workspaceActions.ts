@@ -23,4 +23,5 @@ export type WorkspaceAction =
   | { type: "COLUMN_DELETED"; payload: { columnId: ColumnId } }
   | { type: "CARD_CREATED"; payload: TaskCard }
   | { type: "CARD_UPDATED"; payload: TaskCard }
-  | { type: "CARD_DELETED"; payload: { cardId: CardId } };
+  | { type: "CARD_DELETED"; payload: { cardId: CardId } }
+  | { type: "CARD_MOVED"; payload: { cardId: CardId; destinationColumnId: ColumnId; destinationIndex: number; } }

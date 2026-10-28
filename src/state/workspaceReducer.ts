@@ -215,6 +215,96 @@ export function workspaceReducer(
         },
       };
     }
+    
+case "CARD_MOVED": {
+  const {
+    cardId,
+    destinationColumnId,
+    destinationIndex,
+  } = action.payload;
+
+  const card = state.cards[cardId];
+  const destinationColumn = state.columns[destinationColumnId];
+
+  if (!card || !destinationColumn) return state;
+
+  const sourceColumn = state.columns[card.columnId];
+
+  if (!sourceColumn) return state;
+
+  // Cards can only move between columns on the same board.
+  if (sourceColumn.boardId !== destinationColumn.boardId) {
+    return state;
+  }
+
+  // Remove the card from its current position first.
+  const sourceCardIds = sourceColumn.cardIds.filter(
+    (id) => id !== cardId
+  );
+
+  // Reordering within the same column.
+  if (sourceColumn.id === destinationColumn.id) {
+    const nextIndex = Math.max(
+      0,
+      Math.min(destinationIndex, sourceCardIds.length)
+    );
+
+    const reorderedCardIds = [...sourceCardIds];
+    reorderedCardIds.splice(nextIndex, 0, cardId);
+
+    const unchanged = reorderedCardIds.every(
+      (id, index) => id === sourceColumn.cardIds[index]
+    );
+
+    if (unchanged) return state;
+
+    return {
+      ...state,
+      columns: {
+        ...state.columns,
+        [sourceColumn.id]: {
+          ...sourceColumn,
+          cardIds: reorderedCardIds,
+        },
+      },
+    };
+  }
+
+  // Moving into a different column.
+  const destinationCardIds = destinationColumn.cardIds.filter(
+    (id) => id !== cardId
+  );
+
+  const nextIndex = Math.max(
+    0,
+    Math.min(destinationIndex, destinationCardIds.length)
+  );
+
+  destinationCardIds.splice(nextIndex, 0, cardId);
+
+  return {
+    ...state,
+    columns: {
+      ...state.columns,
+      [sourceColumn.id]: {
+        ...sourceColumn,
+        cardIds: sourceCardIds,
+      },
+      [destinationColumn.id]: {
+        ...destinationColumn,
+        cardIds: destinationCardIds,
+      },
+    },
+    cards: {
+      ...state.cards,
+      [cardId]: {
+        ...card,
+        columnId: destinationColumn.id,
+      },
+    },
+  };
+}
+
 
     case "CARD_DELETED": {
       const { cardId } = action.payload;

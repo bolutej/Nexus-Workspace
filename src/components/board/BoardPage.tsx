@@ -1,4 +1,4 @@
-
+import type React from "react";
 import { 
     useState,
     type FormEvent 
@@ -12,9 +12,36 @@ import { Link, useParams } from "react-router-dom";
 
 import { useWorkspace } from "../../hooks/useWorkspace";
 
+import {
+  DndContext,
+  KeyboardSensor,
+  PointerSensor,
+  closestCorners,
+  useDroppable,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+
+import {
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+
+import { CSS } from "@dnd-kit/utilities";
+
 export default function BoardPage() {
   const { boardId } = useParams();
   const { state, dispatch } = useWorkspace();
+
+  const sensors = useSensors(
+  useSensor(PointerSensor),
+  useSensor(KeyboardSensor, {
+    coordinateGetter: sortableKeyboardCoordinates,
+  })
+);
 
   const [columnTitle, setColumnTitle] = useState("");
   const [error, setError] = useState("");
@@ -134,6 +161,71 @@ function handleMoveTask(
   });
 }
 
+function handleDragEnd(event: DragEndEvent) {
+  const { active, over } = event;
+
+  if (!over || active.id === over.id) return;
+
+  const activeId = String(active.id);
+
+  if (!activeId.startsWith("card:")) return;
+
+  const cardId = activeId.slice("card:".length);
+  const card = state.cards[cardId];
+
+  if (!card) return;
+
+  const overId = String(over.id);
+
+  let destinationColumnId: string;
+  let destinationIndex: number;
+
+  if (overId.startsWith("column:")) {
+    destinationColumnId = overId.slice("column:".length);
+
+    const destinationColumn = state.columns[destinationColumnId];
+
+    if (!destinationColumn) return;
+
+    destinationIndex = destinationColumn.cardIds.length;
+  } else if (overId.startsWith("card:")) {
+    const overCardId = overId.slice("card:".length);
+    const overCard = state.cards[overCardId];
+
+    if (!overCard) return;
+
+    destinationColumnId = overCard.columnId;
+
+    const destinationColumn = state.columns[destinationColumnId];
+
+    if (!destinationColumn) return;
+
+    destinationIndex = destinationColumn.cardIds.indexOf(overCardId);
+
+    if (destinationIndex < 0) return;
+
+    // When moving downward in the same column, account for
+    // removing the dragged card before inserting it.
+    if (
+      card.columnId === destinationColumnId &&
+      destinationColumn.cardIds.indexOf(cardId) < destinationIndex
+    ) {
+      destinationIndex -= 1;
+    }
+  } else {
+    return;
+  }
+
+  dispatch({
+    type: "CARD_MOVED",
+    payload: {
+      cardId,
+      destinationColumnId,
+      destinationIndex,
+    },
+  });
+}
+
 function handleSaveTask(values: {
   title: string;
   description: string;
@@ -222,70 +314,80 @@ function handleCloseTaskForm() {
             <p>Add a column to start organizing this board.</p>
           </div>
         ) : (
-          <div className="columns-grid">
-
-            {columns.map((column) => (
-              <article className="column-card" key={column.id}>
-                <div className="column-card__heading">
-                  <h3>{column.title}</h3>
-                  <span>{column.cardIds.length} cards</span>
-                </div>
-
-                <div className="column-card__actions">
-                  <button
-                    type="button"
-                    className="button button--secondary"
-                    onClick={() =>
-                      handleRenameColumn(column.id, column.title)
-                    }
-                    aria-label={`Rename ${column.title} column`}
-                  >
-                    Rename
-                  </button>
-
-                  <button
-                    type="button"
-                    className="button button--danger"
-                    onClick={() =>
-                      handleDeleteColumn(column.id, column.title)
-                    }
-                    aria-label={`Delete ${column.title} column`}
-                  >
-                    Delete
-                  </button>
-                </div>
-                <button
-  type="button"
-  className="button button--primary task-add-button"
-  onClick={() => handleOpenCreateTask(column.id)}
+          <DndContext
+  sensors={sensors}
+  collisionDetection={closestCorners}
+  onDragEnd={handleDragEnd}
 >
-  + Add task
-</button>
+          <div className="columns-grid">
+     {columns.map((column) => (
+  <DroppableColumn id={column.id} key={column.id}>
+    <div className="column-card__heading">
+      <h3>{column.title}</h3>
+      <span>{column.cardIds.length} cards</span>
+    </div>
+    
 
-<div className="task-list">
-  {column.cardIds.map((cardId) => {
-    const card = state.cards[cardId];
+    <div className="column-card__actions">
+      <button
+        type="button"
+        className="button button--secondary"
+        onClick={() => handleRenameColumn(column.id, column.title)}
+        aria-label={`Rename ${column.title} column`}
+      >
+        Rename
+      </button>
 
-    if (!card) return null;
+      <button
+        type="button"
+        className="button button--danger"
+        onClick={() => handleDeleteColumn(column.id, column.title)}
+        aria-label={`Delete ${column.title} column`}
+      >
+        Delete
+      </button>
+    </div>
+    
 
-    return (
-      <TaskCardItem
-        key={card.id}
-        card={card}
-        columns={columns.map((item) => ({
-          id: item.id,
-          title: item.title,
-        }))}
-        onEdit={handleOpenEditTask}
-        onDelete={handleDeleteTask}
-        onMove={handleMoveTask}
-      />
-    );
-  })}
-</div>
-              </article>
-            ))}
+    <button
+      type="button"
+      className="button button--primary task-add-button"
+      onClick={() => handleOpenCreateTask(column.id)}
+    >
+      + Add task
+    </button>
+
+    <SortableContext
+      items={column.cardIds.map((cardId) => `card:${cardId}`)}
+      strategy={verticalListSortingStrategy}
+    >
+      <div className="task-list">
+        {column.cardIds.map((cardId) => {
+          const card = state.cards[cardId];
+
+          if (!card) return null;
+
+          return (
+            <SortableTask id={card.id} key={card.id}>
+              <TaskCardItem
+                card={card}
+                columns={columns.map((item) => ({
+                  id: item.id,
+                  title: item.title,
+                }))}
+                onEdit={handleOpenEditTask}
+                onDelete={handleDeleteTask}
+                onMove={handleMoveTask}
+              />
+            </SortableTask>
+          );
+        })}
+      </div>
+    </SortableContext>
+  </DroppableColumn>
+))}
           </div>
+          </DndContext>
         )}
       </section>
       {isTaskFormOpen && (
@@ -296,5 +398,62 @@ function handleCloseTaskForm() {
   />
 )}
     </main>
+  );
+}
+
+type SortableTaskProps = {
+  id: string;
+  children: React.ReactNode;
+};
+
+function SortableTask({ id, children }: SortableTaskProps) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: `card:${id}` });
+
+  const style: React.CSSProperties = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.4 : 1,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      {...attributes}
+      {...listeners}
+    >
+      {children}
+    </div>
+  );
+}
+
+type DroppableColumnProps = {
+  id: string;
+  children: React.ReactNode;
+};
+
+function DroppableColumn({ id, children }: DroppableColumnProps) {
+  const { setNodeRef, isOver } = useDroppable({
+    id: `column:${id}`,
+  });
+
+  return (
+    <article
+      ref={setNodeRef}
+      className="column-card"
+      style={{
+        outline: isOver ? "2px dashed var(--accent, #777)" : undefined,
+        outlineOffset: isOver ? "3px" : undefined,
+      }}
+    >
+      {children}
+    </article>
   );
 }
