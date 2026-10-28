@@ -535,4 +535,6 @@ case "COMMENT_DELETED": {
     },
   };
 }
+default:
+  return state;
   }}

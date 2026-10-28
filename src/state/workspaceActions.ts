@@ -75,3 +75,5 @@ export type WorkspaceAction =
       commentId: CommentId;
     };
   }
+| { type: "UNDO" }
+| { type: "REDO" }

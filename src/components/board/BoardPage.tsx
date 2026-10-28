@@ -1,6 +1,7 @@
 import type React from "react";
 import { 
     useState,
+    useEffect,
     type FormEvent 
 } from "react";
 
@@ -41,7 +42,55 @@ let syncVersion = 0;
 
 export default function BoardPage() {
   const { boardId } = useParams();
-  const { state, dispatch } = useWorkspace();
+  const { state, dispatch, canUndo, canRedo } = useWorkspace();
+
+  
+useEffect(() => {
+  function handleHistoryShortcut(event: KeyboardEvent) {
+    const target = event.target;
+
+    if (
+      target instanceof HTMLElement &&
+      (target.isContentEditable ||
+        ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName))
+    ) {
+      return;
+    }
+
+    const modifierPressed = event.ctrlKey || event.metaKey;
+
+    if (!modifierPressed || event.altKey) return;
+
+    if (event.key.toLowerCase() === "z") {
+      event.preventDefault();
+
+      if (event.shiftKey) {
+        if (canRedo) {
+          dispatch({ type: "REDO" });
+        }
+      } else if (canUndo) {
+        dispatch({ type: "UNDO" });
+      }
+
+      return;
+    }
+
+    if (event.key.toLowerCase() === "y" && event.ctrlKey) {
+      event.preventDefault();
+
+      if (canRedo) {
+        dispatch({ type: "REDO" });
+      }
+    }
+  }
+
+  window.addEventListener("keydown", handleHistoryShortcut);
+
+  return () => {
+    window.removeEventListener("keydown", handleHistoryShortcut);
+  };
+}, [dispatch, canUndo, canRedo]);
+
 
   const sensors = useSensors(
   useSensor(PointerSensor),
@@ -314,15 +363,41 @@ function handleCloseTaskForm() {
         <Link to="/">← All boards</Link>
       </nav>
 
-      <header className="board-page__header">
-        <div>
-          <p className="dashboard__eyebrow">WORKSPACE BOARD</p>
-          <h1>{board.title}</h1>
-          <p className="board-page__description">
-            {board.description || "No description provided."}
-          </p>
-        </div>
-      </header>
+      
+<header className="board-page__header">
+  <div>
+    <p className="dashboard__eyebrow">WORKSPACE BOARD</p>
+    <h1>{board.title}</h1>
+    <p className="board-page__description">
+      {board.description || "No description provided."}
+    </p>
+  </div>
+
+  <div className="board-page__history-actions">
+    <button
+      type="button"
+      className="button button--secondary"
+      onClick={() => dispatch({ type: "UNDO" })}
+      disabled={!canUndo}
+      aria-label="Undo last change"
+      title="Undo (Ctrl+Z)"
+    >
+      ↶ Undo
+    </button>
+
+    <button
+      type="button"
+      className="button button--secondary"
+      onClick={() => dispatch({ type: "REDO" })}
+      disabled={!canRedo}
+      aria-label="Redo last undone change"
+      title="Redo (Ctrl+Y)"
+    >
+      ↷ Redo
+    </button>
+  </div>
+</header>
+
       
       
       <section aria-labelledby="columns-heading">
