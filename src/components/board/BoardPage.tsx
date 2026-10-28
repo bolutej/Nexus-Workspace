@@ -32,6 +32,13 @@ import {
 
 import { CSS } from "@dnd-kit/utilities";
 
+import {
+  workspaceSync,
+  workspaceSyncClientId,
+} from "../../api/workspaceSync";
+
+let syncVersion = 0;
+
 export default function BoardPage() {
   const { boardId } = useParams();
   const { state, dispatch } = useWorkspace();
@@ -224,6 +231,16 @@ function handleDragEnd(event: DragEndEvent) {
       destinationIndex,
     },
   });
+
+  workspaceSync.publish({
+  type: "CARD_MOVED",
+  cardId,
+  destinationColumnId,
+  destinationIndex,
+  version: ++syncVersion,
+  clientId: workspaceSyncClientId,
+  timestamp: Date.now(),
+});
 }
 
 function handleSaveTask(values: {
@@ -241,14 +258,24 @@ function handleSaveTask(values: {
       },
     });
   } else if (activeColumnId) {
-    dispatch({
-      type: "CARD_CREATED",
-      payload: {
-        id: crypto.randomUUID(),
-        columnId: activeColumnId,
-        ...values,
-      },
-    });
+  const newCard: TaskCard = {
+    id: crypto.randomUUID(),
+    columnId: activeColumnId,
+    ...values,
+  };
+
+  dispatch({
+    type: "CARD_CREATED",
+    payload: newCard,
+  });
+
+  workspaceSync.publish({
+    type: "CARD_CREATED",
+    card: newCard,
+    version: ++syncVersion,
+    clientId: workspaceSyncClientId,
+    timestamp: Date.now(),
+  });
   } else {
     return;
   }

@@ -25,3 +25,23 @@ export type WorkspaceAction =
   | { type: "CARD_UPDATED"; payload: TaskCard }
   | { type: "CARD_DELETED"; payload: { cardId: CardId } }
   | { type: "CARD_MOVED"; payload: { cardId: CardId; destinationColumnId: ColumnId; destinationIndex: number; } }
+  
+  | {
+      type: "REMOTE_EVENT_APPLIED";
+      payload: {
+        eventId: string;
+        event:
+          | {
+              type: "CARD_CREATED";
+              payload: TaskCard;
+            }
+          | {
+              type: "CARD_MOVED";
+              payload: {
+                cardId: CardId;
+                destinationColumnId: ColumnId;
+                destinationIndex: number;
+              };
+            };
+      };
+    };

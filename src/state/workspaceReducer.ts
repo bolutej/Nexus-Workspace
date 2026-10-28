@@ -334,6 +334,60 @@ case "CARD_MOVED": {
       };
     }
 
+       case "REMOTE_EVENT_APPLIED": {
+      const { event } = action.payload;
+
+      if (event.type === "CARD_CREATED") {
+        const card = event.payload;
+
+        // Ignore duplicate events.
+        if (state.cards[card.id]) {
+          return state;
+        }
+
+        const column = state.columns[card.columnId];
+
+        if (!column) {
+          return state;
+        }
+
+        return {
+          ...state,
+          columns: {
+            ...state.columns,
+            [column.id]: {
+              ...column,
+              cardIds: [...column.cardIds, card.id],
+            },
+          },
+          cards: {
+            ...state.cards,
+            [card.id]: card,
+          },
+        };
+      }
+
+      if (event.type === "CARD_MOVED") {
+        const {
+          cardId,
+          destinationColumnId,
+          destinationIndex,
+        } = event.payload;
+
+        // Reuse the existing move logic.
+        return workspaceReducer(state, {
+          type: "CARD_MOVED",
+          payload: {
+            cardId,
+            destinationColumnId,
+            destinationIndex,
+          },
+        });
+      }
+
+      return state;
+    }
+
     default: {
       return state;
     }

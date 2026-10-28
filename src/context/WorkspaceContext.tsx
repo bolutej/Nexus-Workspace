@@ -17,6 +17,10 @@ import type { WorkspaceAction } from "../state/workspaceActions";
 
 import { loadWorkspace } from "../utils/workspaceStorage";
 import { workspaceApi } from "../api/workspaceApi";
+import {
+  workspaceSync,
+  workspaceSyncClientId,
+} from "../api/workspaceSync";
 
 interface WorkspaceContextValue {
   state: WorkspaceState;
@@ -44,8 +48,50 @@ export function WorkspaceProvider({
   );
 
   useEffect(() => {
-  void workspaceApi.saveWorkspace(state);
-}, [state]);
+    void workspaceApi.saveWorkspace(state);
+  }, [state]);
+
+  useEffect(() => {
+    const unsubscribe = workspaceSync.subscribe((event) => {
+      if (event.clientId === workspaceSyncClientId) {
+        return;
+      }
+
+      if (event.type === "CARD_CREATED") {
+        dispatch({
+          type: "REMOTE_EVENT_APPLIED",
+          payload: {
+            eventId: `${event.clientId}-${event.version}`,
+            event: {
+              type: "CARD_CREATED",
+              payload: event.card,
+            },
+          },
+        });
+
+        return;
+      }
+
+      if (event.type === "CARD_MOVED") {
+        dispatch({
+          type: "REMOTE_EVENT_APPLIED",
+          payload: {
+            eventId: `${event.clientId}-${event.version}`,
+            event: {
+              type: "CARD_MOVED",
+              payload: {
+                cardId: event.cardId,
+                destinationColumnId: event.destinationColumnId,
+                destinationIndex: event.destinationIndex,
+              },
+            },
+          },
+        });
+      }
+    });
+
+    return unsubscribe;
+  }, []);
 
   return (
     <WorkspaceContext.Provider value={{ state, dispatch }}>
